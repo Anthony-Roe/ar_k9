@@ -1,0 +1,4 @@
+
+src/.vs/*
+src/*/obj/Debug/*
+*.net.pdb
