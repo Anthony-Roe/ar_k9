@@ -22,6 +22,7 @@
         </member>
         <member name="M:CitizenFX.Core.BaseScript.TriggerClientEvent(System.String,System.Object[])">
             <summary>
+            Broadcasts an event to all connected players.
             </summary>
             <param name="eventName">The name of the event.</param>
             <param name="args">Arguments to pass to the event.</param>
