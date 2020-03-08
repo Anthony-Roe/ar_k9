@@ -9,7 +9,6 @@
 
         public Main()
         {
-            Debug.WriteLine("Getting ESX");
             TriggerEvent("esx:getSharedObject", new object[] { new Action<dynamic>(esx => {
                     this.ESX = esx;
                 })});
@@ -30,7 +29,6 @@
 
         private void Spawn([FromSource] Player source, int model)
         {
-            Debug.WriteLine("Sending Spawn");
             if (this.HasPermission(source))
             {
                 TriggerClientEvent(source, "K9:Spawn", model);

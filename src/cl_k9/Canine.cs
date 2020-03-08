@@ -341,7 +341,6 @@
                 if (!IsPlayerFreeAiming(PlayerId()) && type == "PANIC")
                 {
                     // Attack nearest ped
-                    Debug.WriteLine("exec");
                     float maxDistance = 50f;
                     Ped[] peds = World.GetAllPeds();
                     Ped closestPed = null;
@@ -357,7 +356,6 @@
                     }
                     if (closestPed != null)
                     {
-                        Debug.WriteLine(closestPed.Handle.ToString());
                         if (closestPed.Handle != PlayerPedId())
                         {
                             await AttackPed(closestPed.Handle);

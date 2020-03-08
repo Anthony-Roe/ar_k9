@@ -210,7 +210,6 @@
             foreach (ExpandoObject item in items)
             {
                 dynamic name = ((IDictionary<string, Object>)item)["name"];
-                Debug.WriteLine(name.ToString());
                 if (illegalItems.Contains(name.ToString()))
                     isIllegal = true;
             }
