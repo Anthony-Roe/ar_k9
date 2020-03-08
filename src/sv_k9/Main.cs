@@ -13,7 +13,8 @@
             TriggerEvent("esx:getSharedObject", new object[] { new Action<dynamic>(esx => {
                     this.ESX = esx;
                 })});
-            this.EventHandlers.Add("K9:Spawn", new Action<Player>(this.SpawnK9));
+            this.EventHandlers.Add("K9:Spawn", new Action<Player, int>(this.Spawn));
+            this.EventHandlers.Add("K9:Delete", new Action<Player>(this.Delete));
             this.EventHandlers.Add("K9:Follow", new Action<Player>(this.Follow));
             this.EventHandlers.Add("K9:Stay", new Action<Player>(this.Stay));
             this.EventHandlers.Add("K9:EnterVehicle", new Action<Player, int>(this.EnterVehicle));
@@ -27,12 +28,19 @@
             return true;
         }
 
-        private void SpawnK9([FromSource] Player source)
+        private void Spawn([FromSource] Player source, int model)
         {
             Debug.WriteLine("Sending Spawn");
             if (this.HasPermission(source))
             {
-                TriggerClientEvent(source, "K9:Spawn");
+                TriggerClientEvent(source, "K9:Spawn", model);
+            }
+        }
+        private void Delete([FromSource] Player source)
+        {
+            if (this.HasPermission(source))
+            {
+                TriggerClientEvent(source, "K9:Delete");
             }
         }
 
@@ -68,7 +76,7 @@
             }
         }
 
-        private void Attack([FromSource] Player source, string type, int ped)
+        private void Attack([FromSource] Player source, string type, int ped = 0)
         {
             if (this.HasPermission(source))
             {
