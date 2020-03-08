@@ -19,7 +19,8 @@
             this.EventHandlers.Add("K9:EnterVehicle", new Action<Player, int>(this.EnterVehicle));
             this.EventHandlers.Add("K9:ExitVehicle", new Action<Player>(this.ExitVehicle));
             this.EventHandlers.Add("K9:Attack", new Action<Player, string, int>(this.Attack));
-            this.EventHandlers.Add("K9:SearchVehicle", new Action<Player, int>(this.SearchVehicle));
+            this.EventHandlers.Add("K9:SearchVehicle", new Action<Player>(this.SearchVehicle));
+            this.EventHandlers.Add("K9:SearchPlayer", new Action<Player>(this.SearchPlayer));
         }
 
         public bool HasPermission(Player source)
@@ -82,11 +83,19 @@
             }
         }
 
-        private void SearchVehicle([FromSource] Player source, int vehicle)
+        private void SearchVehicle([FromSource] Player source)
         {
             if (this.HasPermission(source))
             {
-                TriggerClientEvent(source, "K9:SearchVehicle", vehicle);
+                TriggerClientEvent(source, "K9:SearchVehicle");
+            }
+        }
+
+        private void SearchPlayer([FromSource] Player source)
+        {
+            if (this.HasPermission(source))
+            {
+                TriggerClientEvent(source, "K9:SearchPlayer");
             }
         }
     }

@@ -104,11 +104,19 @@
                                 {
                                     TriggerServerEvent("K9:Attack", "PANIC");
                                 }
-                                else if (args[0].ToString().ToLower().Contains("searchvehicle"))
+                                else if (args[0].ToString().ToLower().Contains("search"))
                                 {
-                                    int veh = 0;
-                                    GetEntityPlayerIsFreeAimingAt(PlayerId(), ref veh);
-                                    TriggerServerEvent("K9:SearchVehicle", veh);
+                                    if (args.Count >= 2)
+                                    {
+                                        if (args[1].ToString().ToLower().Contains("vehicle"))
+                                            TriggerServerEvent("K9:SearchVehicle");
+                                        else if (args[1].ToString().ToLower().Contains("player"))
+                                            TriggerServerEvent("K9:SearchPlayer");
+                                        else
+                                            ESX.ShowNotification("Dog name not found");
+                                    }
+                                    else
+                                        ESX.ShowNotification("~y~Specify~w~: ~y~player~w~/~y~vehicle");
                                 }
                                 else if (args[0].ToString().ToLower().Contains("test"))
                                 {
@@ -140,7 +148,8 @@
             this.EventHandlers.Add("K9:EnterVehicle", new Action<int>(this.EnterVehicle));
             this.EventHandlers.Add("K9:ExitVehicle", new Action(this.ExitVehicle));
             this.EventHandlers.Add("K9:Attack", new Action<string, int>(this.Attack));
-            this.EventHandlers.Add("K9:SearchVehicle", new Action<int>(this.SearchVehicle));
+            this.EventHandlers.Add("K9:SearchVehicle", new Action(this.SearchVehicle));
+            this.EventHandlers.Add("K9:SearchPlayer", new Action(this.SearchPlayer));
         }
 
         private async Task OnTask()
@@ -196,9 +205,14 @@
             k9.CallCommand(COMMANDS.Attack, type, ped);
         }
 
-        private void SearchVehicle(int vehicle)
+        private void SearchVehicle()
         {
-            k9.CallCommand(COMMANDS.Search, null, vehicle);
+            k9.CallCommand(COMMANDS.SearchVehicle);
+        }
+
+        private void SearchPlayer()
+        {
+            k9.CallCommand(COMMANDS.SearchPlayer);
         }
 
         public static bool ContainsIllegal(IDictionary<string, Object> inventory)

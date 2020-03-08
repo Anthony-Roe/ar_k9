@@ -29,7 +29,8 @@
     {
         Stay,
         Follow,
-        Search,
+        SearchVehicle,
+        SearchPlayer,
         Enter,
         Exit,
         Attack,
@@ -119,11 +120,17 @@
                         await this.ExitVehicle();
                     await this.Attack(str, num);
                     break;
-                case COMMANDS.Search:
+                case COMMANDS.SearchVehicle:
                     if (this.action == ACTION.inVehicle)
                         await this.ExitVehicle();
                     if (this.action != ACTION.Search)
-                        await this.SearchVehicle(num);
+                        await this.SearchVehicle();
+                    break;
+                case COMMANDS.SearchPlayer:
+                    if (this.action == ACTION.inVehicle)
+                        await this.ExitVehicle();
+                    if (this.action != ACTION.Search)
+                        await this.SearchPlayer();
                     break;
                 case COMMANDS.Spawn:
                     await this.Spawn();
@@ -204,8 +211,11 @@
 
         private async Task ExitVehicle()
         {
+            if (this.action != ACTION.inVehicle) return;
+
             Vector3 dCoords = GetEntityCoords(this.dog, true);
 
+            // TO DO: Replace with get entity attached
             int veh = GetClosestVehicle(dCoords.X, dCoords.Y, dCoords.Z, 3.0f, 0, 23);
 
             Vector3 vehCoords = GetEntityCoords(veh, true);
@@ -230,13 +240,24 @@
             this.Stay();
         }
 
-        private async Task SearchVehicle(int veh)
+        private async Task SearchVehicle()
         {
             if (this.action == ACTION.Search)
             {
                 Main.ESX.ShowNotification("~y~K9: ~w~Already searching something");
                 return;
             }
+
+            int veh = 0;
+            Vehicle vehicle = await this.GetClosestVehicle2();
+            if (vehicle == null)
+            {
+                Main.ESX.ShowNotification("~y~K9: ~w~No vehicle found!");
+                return;
+            }
+
+            veh = vehicle.Handle;
+
             Vector3 vehSideR = GetOffsetFromEntityInWorldCoords(veh, 2.3f, 0.0f, 0.0f);
 
             Vector3 vehRear = GetOffsetFromEntityInWorldCoords(veh, 0.0f, -3.3f, 0.0f);
@@ -334,6 +355,72 @@
             this.Stay();
         }
 
+        private async Task SearchPlayer()
+        {
+            if (this.action == ACTION.Search)
+            {
+                Main.ESX.ShowNotification("~y~K9: ~w~Already searching something");
+                return;
+            }
+
+            int ply = 0;
+            Ped player = await this.GetClosestPed();
+            if (player == null || !player.IsPlayer)
+            {
+                Main.ESX.ShowNotification("~y~K9: ~w~No player found!");
+                return;
+            }
+
+            ply = player.Handle;
+
+
+            this.action = ACTION.Search;
+
+            Main.ESX.ShowNotification("~y~*VERLOREN*");
+
+            Vector3 plySideR = GetOffsetFromEntityInWorldCoords(ply, 1.3f, 0.0f, 0.0f);
+
+            Vector3 plyRear = GetOffsetFromEntityInWorldCoords(ply, 0.0f, -1.3f, 0.0f);
+
+            Vector3 plySideL = GetOffsetFromEntityInWorldCoords(ply, -1.3f, 0.0f, 0.0f);
+
+            float vehHead = GetEntityHeading(ply);
+
+            TaskFollowNavMeshToCoord(this.dog, plySideL.X, plySideL.Y, plySideL.Z, 3.5f, -1, 1.0f, true, 1);
+
+            await Delay(2000);
+
+            TaskFollowNavMeshToCoord(this.dog, plySideR.X, plySideR.Y, plySideR.Z, 3.5f, -1, 1.0f, true, 1);
+
+            await Delay(2000);
+
+            TaskFollowNavMeshToCoord(this.dog, plyRear.X, plyRear.Y, plyRear.Z, 3.5f, -1, 1.0f, true, 1);
+
+            await Delay(2000);
+
+            bool foundDrugs = false;
+
+            Main.ESX.TriggerServerCallback("esx_inventoryhud:getPlayerInventory", new Action<dynamic>(
+                (inventory) =>
+                    {
+                        bool isIllegal = Main.ContainsIllegal(inventory);
+                        if (isIllegal)
+                            foundDrugs = true;
+                    }), GetPlayerServerId(ply));
+
+            await Delay(1000);
+
+            if (foundDrugs)
+            {
+                Main.ESX.ShowNotification("~y~K9: ~w~Detects ~r~something...");
+            }
+            else
+            {
+                Main.ESX.ShowNotification("~y~K9: ~w~Detects ~y~nothing...");
+            }
+            this.Stay();
+        }
+
         private async Task Attack(string type = "none", int ped = 0)
         {
             if (!DoesEntityExist(ped))
@@ -341,26 +428,9 @@
                 if (!IsPlayerFreeAiming(PlayerId()) && type == "PANIC")
                 {
                     // Attack nearest ped
-                    float maxDistance = 50f;
-                    Ped[] peds = World.GetAllPeds();
-                    Ped closestPed = null;
-                    float lastDistance = maxDistance;
-                    foreach (Ped ped2 in peds)
-                    {
-                        float distance = ped2.Position.DistanceToSquared(Game.Player.Character.Position);
-                        if (distance < lastDistance && ped2.Handle != PlayerPedId() && ped2.IsHuman)
-                        {
-                            closestPed = ped2;
-                            lastDistance = distance;
-                        }
-                    }
-                    if (closestPed != null)
-                    {
-                        if (closestPed.Handle != PlayerPedId())
-                        {
-                            await AttackPed(closestPed.Handle);
-                        }
-                    }
+                    Ped enemy = await this.GetClosestPed();
+                    if (enemy != null)
+                        await AttackPed(enemy.Handle);
                 }
                 else
                 {
@@ -414,6 +484,58 @@
 
                 await Delay(1000);
             }
+        }
+
+        private async Task<Ped> GetClosestPed()
+        {
+            float maxDistance = 50f;
+            Ped[] peds = World.GetAllPeds();
+            Ped closestPed = null;
+            float lastDistance = maxDistance;
+            foreach (Ped ped2 in peds)
+            {
+                float distance = ped2.Position.DistanceToSquared(Game.Player.Character.Position);
+                if (distance < lastDistance && ped2.Handle != PlayerPedId() && ped2.IsHuman)
+                {
+                    closestPed = ped2;
+                    lastDistance = distance;
+                }
+            }
+            if (closestPed != null)
+            {
+                if (closestPed.Handle != PlayerPedId())
+                {
+                    return closestPed;
+                }
+            }
+
+            return null;
+        }
+
+        private async Task<Vehicle> GetClosestVehicle2()
+        {
+            float maxDistance = 50f;
+            Vehicle[] vehicles = World.GetAllVehicles();
+            Vehicle closestVehicle = null;
+            float lastDistance = maxDistance;
+            foreach (Vehicle vehicle in vehicles)
+            {
+                float distance = vehicle.Position.DistanceToSquared(Game.Player.Character.Position);
+                if (distance < lastDistance && vehicle.Handle != PlayerPedId() && vehicle.IsAlive)
+                {
+                    closestVehicle = vehicle;
+                    lastDistance = distance;
+                }
+            }
+            if (closestVehicle != null)
+            {
+                if (closestVehicle.Handle != PlayerPedId())
+                {
+                    return closestVehicle;
+                }
+            }
+
+            return null;
         }
 
         public override string ToString()
