@@ -10,7 +10,7 @@
 
     public class Main : BaseScript
     {
-        private static Canine k9;
+        public static Canine k9;
 
         public static dynamic ESX;
 
@@ -118,25 +118,6 @@
                                     else
                                         ESX.ShowNotification("~y~Specify~w~: ~y~player~w~/~y~vehicle");
                                 }
-                                else if (args[0].ToString().ToLower().Contains("test"))
-                                {
-                                    int veh = 0;
-                                    GetEntityPlayerIsFreeAimingAt(PlayerId(), ref veh);
-                                    ESX.TriggerServerCallback(
-                                        "esx_trunk:getInventoryV",
-                                        new Action<dynamic>(
-                                            (inventory) =>
-                                                {
-                                                    List<string> illegalItems = ContainsIllegal(inventory);
-                                                    if (illegalItems.Count > 0)
-                                                    {
-                                                        string joined = string.Join(", ", illegalItems);
-                                                        ESX.ShowNotification("Vehicle Contains: " + joined);
-                                                    }
-                                                }),
-                                        GetVehicleNumberPlateText(veh));
-
-                                }
                             }
                         }),
                 false /*This command is also not restricted, anyone can use it.*/);
@@ -156,7 +137,8 @@
         {
             if (IsControlJustPressed(0, 36) || IsDisabledControlJustPressed(0, 36) && IsPlayerFreeAiming(PlayerId()))
             {
-                TriggerServerEvent("K9:Attack", "PANIC");
+                if (k9 != null)
+                    TriggerServerEvent("K9:Attack", "PANIC");
             }
 
             await Delay(1);
@@ -164,69 +146,93 @@
 
         private void Spawn(int dog)
         {
-            this.Delete();
-            k9 = new Canine(dog);
+            if (k9 != null)
+                if (k9.dog.Exists())
+                    this.Delete();
+            k9 = new Canine { model = dog };
             k9.CallCommand(COMMANDS.Spawn);
         }
-
+        
         private void Delete()
         {
             if (k9 != null)
             {
-                k9.CallCommand(COMMANDS.Delete);
+                if (k9.dog.Exists())
+                    k9.CallCommand(COMMANDS.Delete);
                 k9 = null;
-                ESX.Notification("~y~K9: ~w~Deleted!");
             }
                 
+                    
         }
 
         private void Follow()
         {
-            k9.CallCommand(COMMANDS.Follow);
+            if (k9 != null)
+                k9.CallCommand(COMMANDS.Follow);
         }
 
         private void Stay()
         {
-            k9.CallCommand(COMMANDS.Stay);
+            if (k9 != null)
+                k9.CallCommand(COMMANDS.Stay);
         }
 
         private void EnterVehicle(int vehicle)
         {
-            k9.CallCommand(COMMANDS.Enter, null, vehicle);
+            if (k9 != null)
+                k9.CallCommand(COMMANDS.Enter, null, vehicle);
         }
 
         private void ExitVehicle()
         {
-            k9.CallCommand(COMMANDS.Exit);
+            if (k9 != null)
+                k9.CallCommand(COMMANDS.Exit);
         }
 
         private void Attack(string type, int ped)
         {
-            k9.CallCommand(COMMANDS.Attack, type, ped);
+            if (k9 != null)
+                k9.CallCommand(COMMANDS.Attack, type, ped);
         }
 
         private void SearchVehicle()
         {
-            k9.CallCommand(COMMANDS.SearchVehicle);
+            if (k9 != null)
+                k9.CallCommand(COMMANDS.SearchVehicle);
         }
 
         private void SearchPlayer()
         {
-            k9.CallCommand(COMMANDS.SearchPlayer);
+            if (k9 != null)
+                k9.CallCommand(COMMANDS.SearchPlayer);
         }
 
-        public static bool ContainsIllegal(IDictionary<string, Object> inventory)
+        public static bool ContainsIllegal(IDictionary<string, object> inventory, bool player = false)
         {
             bool isIllegal = false;
-            dynamic weapons = ((IDictionary<string, Object>)inventory)["weapons"];
-            dynamic items = ((IDictionary<string, Object>)inventory)["items"];
-
-            foreach (ExpandoObject item in items)
+            dynamic itemsPly = inventory["inventory"];
+            if (!player)
             {
-                dynamic name = ((IDictionary<string, Object>)item)["name"];
-                if (illegalItems.Contains(name.ToString()))
-                    isIllegal = true;
+                dynamic items = inventory["items"];
+
+                foreach (ExpandoObject item in items)
+                {
+                    dynamic name = ((IDictionary<string, object>)item)["name"];
+                    if (illegalItems.Contains(name.ToString()))
+                        isIllegal = true;
+                }
             }
+            else
+            {
+                foreach (ExpandoObject item in itemsPly)
+                {
+                    dynamic name = ((IDictionary<string, object>)item)["name"];
+                    if (illegalItems.Contains(name.ToString()))
+                        isIllegal = true;
+                }
+            }
+
+            
 
             return isIllegal;
         }

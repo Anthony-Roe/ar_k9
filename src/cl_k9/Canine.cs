@@ -38,20 +38,16 @@
         Delete
     }
 
-    class Canine : BaseScript
+    public class Canine : BaseScript
     {
-        public int dog;
+        public Ped dog;
 
-        private int model;
+        public int model;
 
         public ACTION action;
 
         public int target;
 
-        public Canine(int model)
-        {
-            this.model = model;
-        }
 
         public async Task Spawn()
         {
@@ -67,29 +63,30 @@
             float pHead = GetEntityHeading(ped);
             float groundZ = 0;
             GetGroundZFor_3dCoord(pPos.X, pPos.Y, pPos.Z, ref groundZ, false);
-            this.dog = CreatePed(28, (uint)this.model, pPos.X, pPos.Y, groundZ + 1.0f, pHead, true, true);
+            pPos.Z = groundZ + 1;
+            this.dog = await World.CreatePed(this.model, pPos, pHead);
+            
+            GiveWeaponToPed(this.dog.Handle, (uint)GetHashKey("WEAPON_ANIMAL"), 200, true, true);
 
-            GiveWeaponToPed(this.dog, (uint)GetHashKey("WEAPON_ANIMAL"), 200, true, true);
+            SetBlockingOfNonTemporaryEvents(this.dog.Handle, true);
 
-            SetBlockingOfNonTemporaryEvents(this.dog, true);
+            SetPedFleeAttributes(this.dog.Handle, 0, false);
 
-            SetPedFleeAttributes(this.dog, 0, false);
+            SetPedCombatAttributes(this.dog.Handle, 3, true);
 
-            SetPedCombatAttributes(this.dog, 3, true);
+            SetPedCombatAttributes(this.dog.Handle, 5, true);
 
-            SetPedCombatAttributes(this.dog, 5, true);
+            SetPedCombatAttributes(this.dog.Handle, 46, true);
 
-            SetPedCombatAttributes(this.dog, 46, true);
+            SetEntityHealth(this.dog.Handle, 400);
 
-            SetEntityHealth(this.dog, 400);
+            SetPedArmour(this.dog.Handle, 200);
 
-            SetPedArmour(this.dog, 200);
-
-            SetPedMoveRateOverride(this.dog, 3.0f);
+            SetPedMoveRateOverride(this.dog.Handle, 7.0f);
             await this.Stay();
         }
 
-        public async Task CallCommand(COMMANDS cmd, string str = "", int num = 0)
+        public async void CallCommand(COMMANDS cmd, string str = "", int num = 0)
         {
             switch (cmd)
             {
@@ -98,94 +95,89 @@
                         await this.ExitVehicle();
                     if (this.action != ACTION.Search)
                         await this.EnterVehicle(num);
-                    break;
+                    return;
                 case COMMANDS.Exit:
                     if (this.action != ACTION.Search)
                         await this.ExitVehicle();
-                    break;
+                    return;
                 case COMMANDS.Follow:
                     if (this.action == ACTION.inVehicle)
                         await this.ExitVehicle();
                     if (this.action != ACTION.Search)
                         await this.Follow();
-                    break;
+                    return;
                 case COMMANDS.Stay:
                     if (this.action == ACTION.inVehicle)
                         await this.ExitVehicle();
                     if (this.action != ACTION.Search)
                         await this.Stay();
-                    break;
+                    return;
                 case COMMANDS.Attack:
                     if (this.action == ACTION.inVehicle)
                         await this.ExitVehicle();
                     await this.Attack(str, num);
-                    break;
+                    return;
                 case COMMANDS.SearchVehicle:
                     if (this.action == ACTION.inVehicle)
                         await this.ExitVehicle();
                     if (this.action != ACTION.Search)
                         await this.SearchVehicle();
-                    break;
+                    return;
                 case COMMANDS.SearchPlayer:
                     if (this.action == ACTION.inVehicle)
                         await this.ExitVehicle();
                     if (this.action != ACTION.Search)
                         await this.SearchPlayer();
-                    break;
+                    return;
                 case COMMANDS.Spawn:
                     await this.Spawn();
-                    break;
+                    return;
                 case COMMANDS.Delete:
-                    if (this.action == ACTION.inVehicle)
-                        await this.ExitVehicle();
-                    await this.Delete();
-                    break;
+                    this.dog.Delete();
+                    return;
             }
-        }
-
-        private async Task<int> Delete()
-        {
-            DeleteEntity(ref this.dog);
-            return this.dog;
         }
 
         private async Task Heal()
         {
-            SetEntityHealth(this.dog, 400);
-            SetPedArmour(this.dog, 200);
+            this.dog.Health = 400;
+            this.dog.Armor = 200;
         }
 
         private async Task Follow()
         {
             if (this.action == ACTION.inVehicle)
                 await this.ExitVehicle();
-            ClearPedTasks(this.dog);
+            this.dog.Task.ClearAll();
             Main.ESX.ShowNotification("~y~*HIER*");
-            TaskFollowToOffsetOfEntity(this.dog, PlayerPedId(), 0.0f, 0.0f, 0.0f, 10.0f, -1, 0.5f, true);
+            this.dog.Task.FollowToOffsetFromEntity(LocalPlayer.Character, new Vector3(0.0f, 0.0f, 0.0f), 7.0f, -1, 0.2f, true);
             this.action = ACTION.Follow;
         }
 
         private async Task Stay()
         {
-            ClearPedTasks(this.dog);
+            this.dog.Task.ClearAll();
+            this.dog.Task.ClearAll();
             Main.ESX.ShowNotification("~y~*BLEIBEN*");
-            TaskPlayAnim(this.dog, "creatures@rottweiler@amb@world_dog_sitting@base", "base", 8.0f, -4.0f, -1, 1, 0.0f, false, false, false);
+            await this.dog.Task.PlayAnimation("creatures@rottweiler@amb@world_dog_sitting@base", "base", 8.0f, -4.0f, -1, AnimationFlags.Loop, 0.0f);
 
             this.action = ACTION.Stay;
         }
 
-        private async Task EnterVehicle(int veh)
+        private async Task EnterVehicle(int vehicle)
         {
-            Vector3 vehCoords = GetEntityCoords(veh, true);
-            float forwardX = GetEntityForwardX(veh) * 2.0f;
-            float forwardY = GetEntityForwardY(veh) * 2.0f;
+            Vehicle veh = (Vehicle)Entity.FromHandle(vehicle);
+            Vector3 vehCoords = veh.Position;
+            float forwardX = veh.ForwardVector.X * 2.0f;
+            float forwardY = veh.ForwardVector.Y * 2.0f;
 
             Main.ESX.ShowNotification("~y~*GEH REIN*");
 
-            SetVehicleDoorOpen(veh, 6, true, true);
-            TaskFollowNavMeshToCoord(this.dog, vehCoords.X - forwardX, vehCoords.Y - forwardY, vehCoords.Z, 4.0f, -1, 1.0f, true, 1);
+            veh.Doors[VehicleDoorIndex.Trunk].Open();
+            this.dog.Task.RunTo(new Vector3(vehCoords.X - forwardX, vehCoords.Y - forwardY, vehCoords.Z), true);
+
             await Delay(3000);
-            TaskAchieveHeading(this.dog, GetEntityHeading(veh), -1);
+            this.dog.Task.AchieveHeading(veh.Heading, -1);
             RequestAnimDict("creatures@rottweiler@in_vehicle@van");
             RequestAnimDict("creatures@rottweiler@amb@world_dog_sitting@base");
             while (!HasAnimDictLoaded("creatures@rottweiler@in_vehicle@van") || !HasAnimDictLoaded("creatures@rottweiler@amb@world_dog_sitting@base"))
@@ -193,18 +185,19 @@
                 await Delay(5);
             }
 
-            TaskPlayAnim(this.dog, "creatures@rottweiler@in_vehicle@van", "get_in", 8.0f, -4.0f, -1, 2, 0.0f, false, false, false);
+            await this.dog.Task.PlayAnimation("creatures@rottweiler@in_vehicle@van", "get_in", 8.0f, -4.0f, -1, AnimationFlags.StayInEndFrame, 0.0f);
 
             await Delay(700);
 
-            ClearPedTasks(this.dog);
-            
-            AttachEntityToEntity(this.dog, veh, GetEntityBoneIndexByName(veh, "seat_pside_f"), 0.0f, 0.0f, 0.3f, 0.0f, 0.0f, 0.0f, false, false, false, false, 0, true);
+            this.dog.Task.ClearAll();
 
-            TaskPlayAnim(this.dog, "creatures@rottweiler@amb@world_dog_sitting@base", "base", 8.0f, -4.0f, -1, 1, 0.0f, false, false, false);
+            this.dog.AttachTo(veh.Bones["seat_pside_f"], new Vector3(0.0f, 0.0f, 0.25f));
 
-            Wait(500);
-            SetVehicleDoorShut(veh, 5, false);
+            await this.dog.Task.PlayAnimation("creatures@rottweiler@amb@world_dog_sitting@base", "base", 8.0f, -4.0f, -1, AnimationFlags.StayInEndFrame, 0.0f);
+
+            await Delay(500);
+
+            veh.Doors[VehicleDoorIndex.Trunk].Close();
 
             this.action = ACTION.inVehicle;
         }
@@ -213,31 +206,27 @@
         {
             if (this.action != ACTION.inVehicle) return;
 
-            Vector3 dCoords = GetEntityCoords(this.dog, true);
-
             // TO DO: Replace with get entity attached
-            int veh = GetClosestVehicle(dCoords.X, dCoords.Y, dCoords.Z, 3.0f, 0, 23);
+            Vehicle veh = (Vehicle)this.dog.GetEntityAttachedTo();
 
-            Vector3 vehCoords = GetEntityCoords(veh, true);
+            Vector3 vehCoords = veh.Position;
 
-            float forwardX = GetEntityForwardX(veh) * 3.7f;
+            float forwardX = veh.ForwardVector.X * 3.7f;
             
-            float forwardY = GetEntityForwardY(veh) * 3.7f;
+            float forwardY = veh.ForwardVector.Y * 3.7f;
 
             Main.ESX.ShowNotification("~y~*VORAUS*");
-            ClearPedTasks(this.dog);
+            this.dog.Task.ClearAll();
 
-            SetVehicleDoorOpen(veh, 5, false, false);
+            veh.Doors[VehicleDoorIndex.Trunk].Open();
 
-            DetachEntity(this.dog, true, false);
+            this.dog.Detach();
 
-            float groundZ = 0;
-            GetGroundZFor_3dCoord(vehCoords.X - forwardX, vehCoords.Y - forwardY, vehCoords.Z, ref groundZ, false);
-            SetEntityCoords(this.dog, vehCoords.X - forwardX, vehCoords.Y - forwardY, groundZ + 1.0f, false, false, false, false);
+            this.dog.Position = new Vector3(vehCoords.X - forwardX, vehCoords.Y - forwardY, World.GetGroundHeight(vehCoords));
 
-            SetVehicleDoorShut(veh, 5, false);
+            veh.Doors[VehicleDoorIndex.Trunk].Close();
 
-            this.Stay();
+            await this.Stay();
         }
 
         private async Task SearchVehicle()
@@ -248,7 +237,6 @@
                 return;
             }
 
-            int veh = 0;
             Vehicle vehicle = await this.GetClosestVehicle2();
             if (vehicle == null)
             {
@@ -256,74 +244,64 @@
                 return;
             }
 
-            veh = vehicle.Handle;
+            Vector3 vehSideR = vehicle.GetOffsetPosition(new Vector3(2.3f, 0.0f, 0.0f));
 
-            Vector3 vehSideR = GetOffsetFromEntityInWorldCoords(veh, 2.3f, 0.0f, 0.0f);
+            Vector3 vehRear = vehicle.GetOffsetPosition(new Vector3(0.0f, -3.3f, 0.0f));
 
-            Vector3 vehRear = GetOffsetFromEntityInWorldCoords(veh, 0.0f, -3.3f, 0.0f);
-
-            Vector3 vehSideL = GetOffsetFromEntityInWorldCoords(veh, -2.3f, 0.0f, 0.0f);
-
-            float vehHead = GetEntityHeading(veh);
-
+            Vector3 vehSideL = vehicle.GetOffsetPosition(new Vector3(-2.3f, 0.0f, 0.0f));
 
             this.action = ACTION.Search;
 
             Main.ESX.ShowNotification("~y~*VERLOREN*");
 
-            TaskFollowNavMeshToCoord(this.dog, vehSideL.X, vehSideL.Y, vehSideL.Z, 3.5f, -1, 1.0f, true, 1);
+            this.dog.Task.RunTo(vehSideR, true);
 
             await Delay(3000);
 
-            TaskAchieveHeading(this.dog, vehHead - 90, -1);
+            this.dog.Task.AchieveHeading(vehicle.Heading - 90, -1);
 
-            SetVehicleDoorOpen(veh, 0, false, false);
+            vehicle.Doors[VehicleDoorIndex.FrontRightDoor].Open();
 
-            SetVehicleDoorOpen(veh, 2, false, false);
-
-            await Delay(3000);
-
-            SetVehicleDoorShut(veh, 0, false);
-
-            SetVehicleDoorShut(veh, 2, false);
-
-
-            TaskFollowNavMeshToCoord(this.dog, vehRear.X, vehRear.Y, vehRear.Z, 3.0f, -1, 1.0f, true, 1);
+            vehicle.Doors[VehicleDoorIndex.BackRightDoor].Open();
 
             await Delay(3000);
 
-            TaskAchieveHeading(this.dog, vehHead, -1);
 
-            SetVehicleDoorOpen(veh, 5, false, false);
+            vehicle.Doors[VehicleDoorIndex.FrontRightDoor].Close();
 
-            SetVehicleDoorOpen(veh, 6, false, false);
+            vehicle.Doors[VehicleDoorIndex.BackRightDoor].Close();
 
-            SetVehicleDoorOpen(veh, 7, false, false);
-
-            await Delay(3000);
-
-            SetVehicleDoorShut(veh, 5, false);
-
-            SetVehicleDoorShut(veh, 6, false);
-
-            SetVehicleDoorShut(veh, 7, false);
-
-
-            TaskFollowNavMeshToCoord(this.dog, vehSideR.X, vehSideR.Y, vehSideR.Z, 3.0f, -1, 1.0f, true, 1);
+            this.dog.Task.RunTo(vehRear, true);
 
             await Delay(3000);
 
-            TaskAchieveHeading(this.dog, vehHead - 270, -1);
+            this.dog.Task.AchieveHeading(vehicle.Heading, -1);
 
-            SetVehicleDoorOpen(veh, 1, false, false);
+            vehicle.Doors[VehicleDoorIndex.Hood].Open();
 
-            SetVehicleDoorOpen(veh, 3, false, false);
+            vehicle.Doors[VehicleDoorIndex.Trunk].Open();
 
             await Delay(3000);
 
-            SetVehicleDoorShut(veh, 1, false);
+            vehicle.Doors[VehicleDoorIndex.Hood].Close();
 
-            SetVehicleDoorShut(veh, 3, false);
+            vehicle.Doors[VehicleDoorIndex.Trunk].Close();
+
+            this.dog.Task.RunTo(vehSideL, true);
+
+            await Delay(3000);
+
+            this.dog.Task.AchieveHeading(vehicle.Heading - 270, -1);
+
+            vehicle.Doors[VehicleDoorIndex.FrontLeftDoor].Open();
+
+            vehicle.Doors[VehicleDoorIndex.BackLeftDoor].Open();
+
+            await Delay(3000);
+
+            vehicle.Doors[VehicleDoorIndex.FrontLeftDoor].Close();
+
+            vehicle.Doors[VehicleDoorIndex.BackLeftDoor].Close();
 
             bool foundDrugs = false;
 
@@ -333,14 +311,14 @@
                         bool isIllegal = Main.ContainsIllegal(inventory);
                         if (isIllegal)
                             foundDrugs = true;
-                    }), GetVehicleNumberPlateText(veh));
+                    }), vehicle.Mods.LicensePlate);
             Main.ESX.TriggerServerCallback("esx_glovebox:getInventoryV", new Action<dynamic>(
                 (inventory) =>
                     {
                         bool isIllegal = Main.ContainsIllegal(inventory);
                         if (isIllegal)
                             foundDrugs = true;
-                    }), GetVehicleNumberPlateText(veh));
+                    }), vehicle.Mods.LicensePlate);
 
             await Delay(1000);
 
@@ -352,7 +330,8 @@
             {
                 Main.ESX.ShowNotification("~y~K9: ~w~Detects ~y~nothing...");
             }
-            this.Stay();
+
+            await this.Stay();
         }
 
         private async Task SearchPlayer()
@@ -363,7 +342,6 @@
                 return;
             }
 
-            int ply = 0;
             Ped player = await this.GetClosestPed();
             if (player == null || !player.IsPlayer)
             {
@@ -371,30 +349,31 @@
                 return;
             }
 
-            ply = player.Handle;
-
-
             this.action = ACTION.Search;
 
             Main.ESX.ShowNotification("~y~*VERLOREN*");
 
-            Vector3 plySideR = GetOffsetFromEntityInWorldCoords(ply, 1.3f, 0.0f, 0.0f);
+            Vector3 plySideR = player.GetOffsetPosition(new Vector3(1.3f, 0.0f, 0.0f));
 
-            Vector3 plyRear = GetOffsetFromEntityInWorldCoords(ply, 0.0f, -1.3f, 0.0f);
+            Vector3 plyRear = player.GetOffsetPosition(new Vector3(0.0f, -1.3f, 0.0f));
 
-            Vector3 plySideL = GetOffsetFromEntityInWorldCoords(ply, -1.3f, 0.0f, 0.0f);
+            Vector3 plySideL = player.GetOffsetPosition(new Vector3(-1.3f, 0.0f, 0.0f));
 
-            float vehHead = GetEntityHeading(ply);
+            this.dog.Task.RunTo(plySideR, true);
 
-            TaskFollowNavMeshToCoord(this.dog, plySideL.X, plySideL.Y, plySideL.Z, 3.5f, -1, 1.0f, true, 1);
-
-            await Delay(2000);
-
-            TaskFollowNavMeshToCoord(this.dog, plySideR.X, plySideR.Y, plySideR.Z, 3.5f, -1, 1.0f, true, 1);
+            this.dog.Task.AchieveHeading(player.Heading - 90, -1);
 
             await Delay(2000);
 
-            TaskFollowNavMeshToCoord(this.dog, plyRear.X, plyRear.Y, plyRear.Z, 3.5f, -1, 1.0f, true, 1);
+            this.dog.Task.RunTo(plyRear, true);
+
+            this.dog.Task.AchieveHeading(player.Heading, -1);
+
+            await Delay(2000);
+
+            this.dog.Task.RunTo(plySideL, true);
+
+            this.dog.Task.AchieveHeading(player.Heading - 270, -1);
 
             await Delay(2000);
 
@@ -403,10 +382,10 @@
             Main.ESX.TriggerServerCallback("esx_inventoryhud:getPlayerInventory", new Action<dynamic>(
                 (inventory) =>
                     {
-                        bool isIllegal = Main.ContainsIllegal(inventory);
+                        bool isIllegal = Main.ContainsIllegal(inventory, true);
                         if (isIllegal)
                             foundDrugs = true;
-                    }), GetPlayerServerId(ply));
+                    }), GetPlayerServerId(NetworkGetPlayerIndexFromPed(player.Handle)));
 
             await Delay(1000);
 
@@ -418,67 +397,75 @@
             {
                 Main.ESX.ShowNotification("~y~K9: ~w~Detects ~y~nothing...");
             }
-            this.Stay();
+
+            await this.Stay();
         }
 
-        private async Task Attack(string type = "none", int ped = 0)
+        private async Task Attack(string type = "none", int pedHandle = 0)
         {
-            if (!DoesEntityExist(ped))
+            try
             {
-                if (!IsPlayerFreeAiming(PlayerId()) && type == "PANIC")
+                Debug.WriteLine(pedHandle.ToString());
+                if (pedHandle == 0)
                 {
-                    // Attack nearest ped
-                    Ped enemy = await this.GetClosestPed();
-                    if (enemy != null)
-                        await AttackPed(enemy.Handle);
-                }
-                else
-                {
-                    int enemy = 0;
-                    bool foundEnemy = GetEntityPlayerIsFreeAimingAt(PlayerId(), ref enemy);
-                    if (enemy != 0)
+                    if (!this.LocalPlayer.IsAiming && type == "PANIC")
                     {
-                        await AttackPed(enemy);
+                        // Attack nearest ped
+                        Ped enemy = await this.GetClosestPed();
+                        if (enemy != null)
+                            await this.AttackPed(enemy);
                     }
-                    else if (type == "PANIC")
+                    else
                     {
-                        // attack nearest player to dog
-                        Vector3 area = GetOffsetFromEntityInWorldCoords(GetPlayerPed(-1), 0.0f, 10.0f, 0.0f);
-                        await Delay(4000);
+                        Ped enemy = (Ped)this.LocalPlayer.GetTargetedEntity();
 
-                        int player = GetNearestPlayerToEntity(this.dog);
-                        if (GetPlayerPed(player) != PlayerPedId())
+                        if (enemy != null)
                         {
-                            await AttackPed(GetPlayerPed(player));
+                            await this.AttackPed(enemy);
                         }
+                        /*
+                        else if (type == "PANIC")
+                        {
+                            // attack nearest player to dog
+                            Vector3 area = this.LocalPlayer.Character.GetOffsetPosition(new Vector3(0.0f, 10.0f, 0.0f));
+                            await Delay(4000);
+
+                            Player player = this.Players[GetNearestPlayerToEntity(this.dog.Handle)];
+                            if (ped.Handle != this.LocalPlayer.Character.Handle)
+                            {
+                                await this.AttackPed(player.Character);
+                            }
+                        }
+                        */
                     }
                 }
-            }
-            else if (DoesEntityExist(ped))
-            {
-                int enemyped = GetPlayerPed(GetPlayerFromServerId(ped));
-                if (enemyped != 0)
+                else if (pedHandle != 0)
                 {
-                    await AttackPed(enemyped);
+                    Entity ped = Entity.FromHandle(pedHandle);
+                    await this.AttackPed(ped);
                 }
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e.InnerException.ToString());
             }
         }
 
-        private async Task AttackPed(int ped)
+        private async Task AttackPed(Entity ped)
         {
-            ClearPedTasks(this.dog);
+            this.dog.Task.ClearAll();
             Main.ESX.ShowNotification("~y~*FASSEN*");
-            TaskCombatPed(this.dog, ped, 0, 16);
-            SetPedKeepTask(this.dog, true);
+            this.dog.Task.FightAgainst((Ped)ped);
 
-            target = ped;
-            action = ACTION.Attack;
+            this.dog.AlwaysKeepTask = true;
+
+            this.action = ACTION.Attack;
 
             while (this.action == ACTION.Attack)
             {
-                if (IsEntityDead(ped))
+                if (!ped.IsAlive)
                 {
-                    this.Stay();
+                    await this.Stay();
                     break;
                 }
 
@@ -495,15 +482,16 @@
             foreach (Ped ped2 in peds)
             {
                 float distance = ped2.Position.DistanceToSquared(Game.Player.Character.Position);
-                if (distance < lastDistance && ped2.Handle != PlayerPedId() && ped2.IsHuman)
+                if (distance < lastDistance && ped2.Handle != this.LocalPlayer.Character.Handle && ped2.IsHuman)
                 {
                     closestPed = ped2;
                     lastDistance = distance;
                 }
             }
+
             if (closestPed != null)
             {
-                if (closestPed.Handle != PlayerPedId())
+                if (closestPed.Handle != this.LocalPlayer.Character.Handle)
                 {
                     return closestPed;
                 }
@@ -521,15 +509,16 @@
             foreach (Vehicle vehicle in vehicles)
             {
                 float distance = vehicle.Position.DistanceToSquared(Game.Player.Character.Position);
-                if (distance < lastDistance && vehicle.Handle != PlayerPedId() && vehicle.IsAlive)
+                if (distance < lastDistance && vehicle.Handle != this.LocalPlayer.Character.Handle && vehicle.IsAlive)
                 {
                     closestVehicle = vehicle;
                     lastDistance = distance;
                 }
             }
+
             if (closestVehicle != null)
             {
-                if (closestVehicle.Handle != PlayerPedId())
+                if (closestVehicle.Handle != this.LocalPlayer.Character.Handle)
                 {
                     return closestVehicle;
                 }

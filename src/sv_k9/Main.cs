@@ -35,6 +35,7 @@
                 TriggerClientEvent(source, "K9:Spawn", model);
             }
         }
+
         private void Delete([FromSource] Player source)
         {
             if (this.HasPermission(source))
@@ -82,7 +83,7 @@
                 TriggerClientEvent(source, "K9:Attack", type, ped);
             }
         }
-
+        
         private void SearchVehicle([FromSource] Player source)
         {
             if (this.HasPermission(source))
