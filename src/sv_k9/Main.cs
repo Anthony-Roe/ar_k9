@@ -25,7 +25,16 @@
 
         public bool HasPermission(Player source)
         {
-            return true;
+            dynamic player = this.ESX.GetPlayerFromId(source.Handle);
+            dynamic job = player != null ? player.getJob() : null;
+
+            if (player == null || job == null)
+                return false;
+
+            if (job.grade_name == "k9")
+                return true;
+
+            return false;
         }
 
         private void Spawn([FromSource] Player source, int model)
