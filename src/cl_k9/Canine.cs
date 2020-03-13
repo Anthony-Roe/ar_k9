@@ -252,6 +252,26 @@
 
             this.action = ACTION.Search;
 
+            // Get Inventory 
+            bool foundDrugs = false;
+
+            Debug.WriteLine(vehicle.Mods.LicensePlate);
+
+            Main.ESX.TriggerServerCallback("esx_trunk:getInventoryV", new Action<dynamic>(
+                (inventory) =>
+                    {
+                        bool isIllegal = Main.ContainsIllegal(inventory);
+                        if (isIllegal)
+                            foundDrugs = true;
+                    }), vehicle.Mods.LicensePlate);
+            Main.ESX.TriggerServerCallback("esx_glovebox:getInventoryV", new Action<dynamic>(
+                (inventory) =>
+                    {
+                        bool isIllegal = Main.ContainsIllegal(inventory);
+                        if (isIllegal)
+                            foundDrugs = true;
+                    }), vehicle.Mods.LicensePlate);
+
             Main.ESX.ShowNotification("~y~*VERLOREN*");
 
             this.dog.Task.RunTo(vehSideR, true);
@@ -303,25 +323,6 @@
 
             vehicle.Doors[VehicleDoorIndex.BackLeftDoor].Close();
 
-            bool foundDrugs = false;
-
-            Main.ESX.TriggerServerCallback("esx_trunk:getInventoryV", new Action<dynamic>(
-                (inventory) =>
-                    {
-                        bool isIllegal = Main.ContainsIllegal(inventory);
-                        if (isIllegal)
-                            foundDrugs = true;
-                    }), vehicle.Mods.LicensePlate);
-            Main.ESX.TriggerServerCallback("esx_glovebox:getInventoryV", new Action<dynamic>(
-                (inventory) =>
-                    {
-                        bool isIllegal = Main.ContainsIllegal(inventory);
-                        if (isIllegal)
-                            foundDrugs = true;
-                    }), vehicle.Mods.LicensePlate);
-
-            await Delay(1000);
-
             if (foundDrugs)
             {
                 Main.ESX.ShowNotification("~y~K9: ~w~Detects ~r~something...");
@@ -359,6 +360,16 @@
 
             Vector3 plySideL = player.GetOffsetPosition(new Vector3(-1.3f, 0.0f, 0.0f));
 
+            // Get Inventory
+            bool foundDrugs = false;
+            Main.ESX.TriggerServerCallback("esx_inventoryhud:getPlayerInventory", new Action<dynamic>(
+                (inventory) =>
+                    {
+                        bool isIllegal = Main.ContainsIllegal(inventory, true);
+                        if (isIllegal)
+                            foundDrugs = true;
+                    }), GetPlayerServerId(NetworkGetPlayerIndexFromPed(player.Handle)));
+
             this.dog.Task.RunTo(plySideR, true);
 
             this.dog.Task.AchieveHeading(player.Heading - 90, -1);
@@ -374,20 +385,6 @@
             this.dog.Task.RunTo(plySideL, true);
 
             this.dog.Task.AchieveHeading(player.Heading - 270, -1);
-
-            await Delay(2000);
-
-            bool foundDrugs = false;
-
-            Main.ESX.TriggerServerCallback("esx_inventoryhud:getPlayerInventory", new Action<dynamic>(
-                (inventory) =>
-                    {
-                        bool isIllegal = Main.ContainsIllegal(inventory, true);
-                        if (isIllegal)
-                            foundDrugs = true;
-                    }), GetPlayerServerId(NetworkGetPlayerIndexFromPed(player.Handle)));
-
-            await Delay(1000);
 
             if (foundDrugs)
             {

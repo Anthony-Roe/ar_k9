@@ -210,7 +210,6 @@
         public static bool ContainsIllegal(IDictionary<string, object> inventory, bool player = false)
         {
             bool isIllegal = false;
-            dynamic itemsPly = inventory["inventory"];
             if (!player)
             {
                 dynamic items = inventory["items"];
@@ -224,6 +223,8 @@
             }
             else
             {
+                dynamic itemsPly = inventory["inventory"];
+
                 foreach (ExpandoObject item in itemsPly)
                 {
                     dynamic name = ((IDictionary<string, object>)item)["name"];
