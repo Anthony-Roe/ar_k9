@@ -1,0 +1,26 @@
+{
+    "allowedJobGrade": "k9",
+    "illegalItems": [
+      "weed20g",
+      "weed4g",
+      "weedbrick",
+      "weed_packaged",
+      "weed_untrimmed",
+      "bagofdope",
+      "meth",
+      "meth10g",
+      "meth1g",
+      "methbrick",
+      "meth_packaged",
+      "meth_raw",
+      "cocaine_cut",
+      "cocaine_packaged",
+      "cocaine_uncut",
+      "coke10g",
+      "coke1g",
+      "cokebrick"
+    ],
+    "illegalWeapons": [
+        "WEAPON_BAT"
+    ]
+  }

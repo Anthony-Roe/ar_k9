@@ -253,7 +253,7 @@
             this.action = ACTION.Search;
 
             // Get Inventory 
-            bool foundDrugs = false;
+            bool found = false;
 
             Debug.WriteLine(vehicle.Mods.LicensePlate);
 
@@ -262,14 +262,14 @@
                     {
                         bool isIllegal = Main.ContainsIllegal(inventory);
                         if (isIllegal)
-                            foundDrugs = true;
+                            found = true;
                     }), vehicle.Mods.LicensePlate);
             Main.ESX.TriggerServerCallback("esx_glovebox:getInventoryV", new Action<dynamic>(
                 (inventory) =>
                     {
                         bool isIllegal = Main.ContainsIllegal(inventory);
                         if (isIllegal)
-                            foundDrugs = true;
+                            found = true;
                     }), vehicle.Mods.LicensePlate);
 
             Main.ESX.ShowNotification("~y~*VERLOREN*");
@@ -278,7 +278,7 @@
 
             await Delay(3000);
 
-            this.dog.Task.AchieveHeading(vehicle.Heading - 90, -1);
+            this.dog.Task.AchieveHeading(vehicle.Heading - 90);
 
             vehicle.Doors[VehicleDoorIndex.FrontRightDoor].Open();
 
@@ -295,7 +295,7 @@
 
             await Delay(3000);
 
-            this.dog.Task.AchieveHeading(vehicle.Heading, -1);
+            this.dog.Task.AchieveHeading(vehicle.Heading);
 
             vehicle.Doors[VehicleDoorIndex.Hood].Open();
 
@@ -311,7 +311,7 @@
 
             await Delay(3000);
 
-            this.dog.Task.AchieveHeading(vehicle.Heading - 270, -1);
+            this.dog.Task.AchieveHeading(vehicle.Heading - 270);
 
             vehicle.Doors[VehicleDoorIndex.FrontLeftDoor].Open();
 
@@ -323,7 +323,7 @@
 
             vehicle.Doors[VehicleDoorIndex.BackLeftDoor].Close();
 
-            if (foundDrugs)
+            if (found)
             {
                 Main.ESX.ShowNotification("~y~K9: ~w~Detects ~r~something...");
             }
@@ -361,14 +361,16 @@
             Vector3 plySideL = player.GetOffsetPosition(new Vector3(-1.3f, 0.0f, 0.0f));
 
             // Get Inventory
-            bool foundDrugs = false;
-            Main.ESX.TriggerServerCallback("esx_inventoryhud:getPlayerInventory", new Action<dynamic>(
-                (inventory) =>
-                    {
-                        bool isIllegal = Main.ContainsIllegal(inventory, true);
-                        if (isIllegal)
-                            foundDrugs = true;
-                    }), GetPlayerServerId(NetworkGetPlayerIndexFromPed(player.Handle)));
+            bool found = false;
+            Main.ESX.TriggerServerCallback(
+                "esx_inventoryhud:getPlayerInventory",
+                new Action<dynamic>(
+                    (inventory) =>
+                        {
+                            bool isIllegal = Main.ContainsIllegal(inventory, true);
+                            if (isIllegal)
+                                found = true;
+                        }), GetPlayerServerId(NetworkGetPlayerIndexFromPed(player.Handle)));
 
             this.dog.Task.RunTo(plySideR, true);
 
@@ -386,7 +388,7 @@
 
             this.dog.Task.AchieveHeading(player.Heading - 270, -1);
 
-            if (foundDrugs)
+            if (found)
             {
                 Main.ESX.ShowNotification("~y~K9: ~w~Detects ~r~something...");
             }
@@ -420,20 +422,6 @@
                         {
                             await this.AttackPed(enemy);
                         }
-                        /*
-                        else if (type == "PANIC")
-                        {
-                            // attack nearest player to dog
-                            Vector3 area = this.LocalPlayer.Character.GetOffsetPosition(new Vector3(0.0f, 10.0f, 0.0f));
-                            await Delay(4000);
-
-                            Player player = this.Players[GetNearestPlayerToEntity(this.dog.Handle)];
-                            if (ped.Handle != this.LocalPlayer.Character.Handle)
-                            {
-                                await this.AttackPed(player.Character);
-                            }
-                        }
-                        */
                     }
                 }
                 else if (pedHandle != 0)

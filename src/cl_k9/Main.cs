@@ -6,6 +6,10 @@
     using System.Threading.Tasks;
     using CitizenFX.Core;
 
+    using Newtonsoft.Json;
+
+    using sh_k9;
+
     using static CitizenFX.Core.Native.API;
 
     public class Main : BaseScript
@@ -14,32 +18,29 @@
 
         public static dynamic ESX;
 
-        public static List<string> illegalItems = new List<string>
-                                                      {
-                                                          "weed20g",
-                                                          "weed4g",
-                                                          "weedbrick",
-                                                          "weed_packaged",
-                                                          "weed_untrimmed",
-                                                          "bagofdope",
-                                                          "meth",
-                                                          "meth10g",
-                                                          "meth1g",
-                                                          "methbrick",
-                                                          "meth_packaged",
-                                                          "meth_raw",
-                                                          "cocaine_cut",
-                                                          "cocaine_packaged",
-                                                          "cocaine_uncut",
-                                                          "coke10g",
-                                                          "coke1g",
-                                                          "cokebrick"
-                                                      };
+        public static Settings settings;
 
         public Main()
         {
             this.EventHandlers["onClientResourceStart"] += new Action<string>(this.Start);
             this.Tick += this.OnTask;
+            LoadConfig();
+        }
+
+        private void LoadConfig()
+        {
+            string content = null;
+
+            try
+            {
+                content = LoadResourceFile(GetCurrentResourceName(), "config.json");
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine($"An error occurred while loading the config file, error description: {e.Message}.");
+            }
+
+            settings = JsonConvert.DeserializeObject<Settings>(content);
         }
 
         private void Start(string name)
@@ -210,25 +211,37 @@
         public static bool ContainsIllegal(IDictionary<string, object> inventory, bool player = false)
         {
             bool isIllegal = false;
-            if (!player)
+            if (player == false)
             {
                 dynamic items = inventory["items"];
+                dynamic weapons = inventory["weapons"];
 
-                foreach (ExpandoObject item in items)
+                foreach (IDictionary<string, object> item in items)
                 {
-                    dynamic name = ((IDictionary<string, object>)item)["name"];
-                    if (illegalItems.Contains(name.ToString()))
+                    if (settings.illegalItems.Contains(item["name"].ToString()))
+                        isIllegal = true;
+                }
+                foreach (IDictionary<string, object> weapon in weapons)
+                {
+                    if (settings.illegalWeapons.Contains(weapon["name"].ToString()))
                         isIllegal = true;
                 }
             }
             else
             {
-                dynamic itemsPly = inventory["inventory"];
+                dynamic items = inventory["inventory"];
+                dynamic weapons = inventory["weapons"];
+                
 
-                foreach (ExpandoObject item in itemsPly)
+                foreach (IDictionary<string, object> item in items)
                 {
-                    dynamic name = ((IDictionary<string, object>)item)["name"];
-                    if (illegalItems.Contains(name.ToString()))
+                    if (settings.illegalItems.Contains(item["name"].ToString()) && Convert.ToInt32(item["count"]) > 0)
+                        isIllegal = true;
+                }
+
+                foreach (IDictionary<string, object> weapon in weapons)
+                {
+                    if (settings.illegalWeapons.Contains(weapon["name"].ToString()))
                         isIllegal = true;
                 }
             }

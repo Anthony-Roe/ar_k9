@@ -2,10 +2,17 @@
 {
     using System;
     using CitizenFX.Core;
+
+    using Newtonsoft.Json;
+
+    using sh_k9;
+
     using static CitizenFX.Core.Native.API;
     public class Main : BaseScript
     {
         private dynamic ESX;
+
+        public Settings settings;
 
         public Main()
         {
@@ -21,6 +28,24 @@
             this.EventHandlers.Add("K9:Attack", new Action<Player, string, int>(this.Attack));
             this.EventHandlers.Add("K9:SearchVehicle", new Action<Player>(this.SearchVehicle));
             this.EventHandlers.Add("K9:SearchPlayer", new Action<Player>(this.SearchPlayer));
+
+            LoadConfig();
+        }
+
+        private void LoadConfig()
+        {
+            string content = null;
+
+            try
+            {
+                content = LoadResourceFile(GetCurrentResourceName(), "config.json");
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine($"An error occurred while loading the config file, error description: {e.Message}.");
+            }
+
+            settings = JsonConvert.DeserializeObject<Settings>(content);
         }
 
         public bool HasPermission(Player source)
@@ -31,7 +56,7 @@
             if (player == null || job == null)
                 return false;
 
-            if (job.grade_name == "k9")
+            if (job.grade_name == settings.allowedJobGrade)
                 return true;
 
             return false;
