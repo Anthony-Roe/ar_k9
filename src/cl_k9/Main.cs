@@ -22,9 +22,15 @@
 
         public Main()
         {
+            LoadConfig();
+
+            while (settings == null)
+            {
+                Delay(100);
+            }
+
             this.EventHandlers["onClientResourceStart"] += new Action<string>(this.Start);
             this.Tick += this.OnTask;
-            LoadConfig();
         }
 
         private void LoadConfig()
@@ -47,7 +53,8 @@
         {
             if (GetCurrentResourceName() != name) return;
 
-            TriggerEvent("esx:getSharedObject", new Action<dynamic>((dynamic obj) => { ESX = obj; }));
+            if (settings.standalone == false)
+                TriggerEvent("esx:getSharedObject", new Action<dynamic>((dynamic obj) => { ESX = obj; }));
 
             RegisterCommand(
                 "k9",
@@ -56,7 +63,7 @@
                         {
                             if (args.Count >= 1)
                             {
-                                if (args[0].ToString().ToLower().Contains("spawn"))
+                                if (args[0].ToString().ToLower().Contains(settings.dict["commands"]["spawn"].ToString()))
                                 {
                                     if (args.Count >= 2)
                                     {
@@ -69,24 +76,24 @@
                                         else if (args[1].ToString().ToLower().Contains("shepherd"))
                                             TriggerServerEvent("K9:Spawn", (int)MODELS.Shepherd);
                                         else
-                                            ESX.ShowNotification("Dog name not found");
+                                            ShowNotification(settings.dict["dogNameNotFound"]);
                                     }
                                     else
-                                        ESX.ShowNotification("You have not entered a valid dog name try: [~y~rott~w~,~y~husky~w~,~y~retriever~w~,~y~shepherd~w~]");
+                                        ShowNotification(settings.dict["invalidDogName"]);
                                 }
-                                else if (args[0].ToString().ToLower().Contains("delete"))
+                                else if (args[0].ToString().ToLower().Contains(settings.dict["commands"]["delete"].ToString()))
                                 {
                                     TriggerServerEvent("K9:Delete");
                                 }
-                                else if (args[0].ToString().ToLower().Contains("follow"))
+                                else if (args[0].ToString().ToLower().Contains(settings.dict["commands"]["follow"].ToString()))
                                 {
                                     TriggerServerEvent("K9:Follow");
                                 }
-                                else if (args[0].ToString().ToLower().Contains("stay"))
+                                else if (args[0].ToString().ToLower().Contains(settings.dict["commands"]["stay"].ToString()))
                                 {
                                     TriggerServerEvent("K9:Stay");
                                 }
-                                else if (args[0].ToString().ToLower().Contains("enter"))
+                                else if (args[0].ToString().ToLower().Contains(settings.dict["commands"]["enter"].ToString()))
                                 {
                                     if (IsPedInAnyVehicle(PlayerPedId(), false))
                                     {
@@ -94,30 +101,30 @@
                                         TriggerServerEvent("K9:EnterVehicle", veh);
                                     }
                                     else
-                                        ESX.ShowNotification("~y~K9: ~w~You must be in a vehicle.");
+                                        ShowNotification(settings.dict["commandEnterHelp"]);
 
                                 }
-                                else if (args[0].ToString().ToLower().Contains("exit"))
+                                else if (args[0].ToString().ToLower().Contains(settings.dict["commands"]["exit"].ToString()))
                                 {
                                     TriggerServerEvent("K9:ExitVehicle");
                                 }
-                                else if (args[0].ToString().ToLower().Contains("attack"))
+                                else if (args[0].ToString().ToLower().Contains(settings.dict["commands"]["attack"].ToString()))
                                 {
                                     TriggerServerEvent("K9:Attack", "PANIC");
                                 }
-                                else if (args[0].ToString().ToLower().Contains("search"))
+                                else if (args[0].ToString().ToLower().Contains(settings.dict["commands"]["search"].ToString()))
                                 {
                                     if (args.Count >= 2)
                                     {
-                                        if (args[1].ToString().ToLower().Contains("vehicle"))
+                                        if (args[1].ToString().ToLower().Contains(settings.dict["commands"]["searchVehicle"].ToString()))
                                             TriggerServerEvent("K9:SearchVehicle");
-                                        else if (args[1].ToString().ToLower().Contains("player"))
+                                        else if (args[1].ToString().ToLower().Contains(settings.dict["commands"]["searchPlayer"].ToString()))
                                             TriggerServerEvent("K9:SearchPlayer");
                                         else
-                                            ESX.ShowNotification("Dog name not found");
+                                            ShowNotification(settings.dict["commandSearchHelp"]);
                                     }
                                     else
-                                        ESX.ShowNotification("~y~Specify~w~: ~y~player~w~/~y~vehicle");
+                                        ShowNotification(settings.dict["commandSearchHelp"]);
                                 }
                             }
                         }),
@@ -136,10 +143,10 @@
 
         private async Task OnTask()
         {
-            if (IsControlJustPressed(0, 36) || IsDisabledControlJustPressed(0, 36) && IsPlayerFreeAiming(PlayerId()))
+            if (k9 == null) return;
+            if (IsPlayerFreeAiming(PlayerId()) && IsControlJustPressed((int)settings.dict["attackKeyModifier"][0], (int)settings.dict["attackKeyModifier"][1]) || IsDisabledControlJustPressed((int)settings.dict["attackKeyModifier"][0], (int)settings.dict["attackKeyModifier"][1]))
             {
-                if (k9 != null)
-                    TriggerServerEvent("K9:Attack", "PANIC");
+                TriggerServerEvent("K9:Attack", "PANIC");
             }
 
             await Delay(1);
@@ -206,6 +213,13 @@
         {
             if (k9 != null)
                 k9.CallCommand(COMMANDS.SearchPlayer);
+        }
+
+        public static void ShowNotification(string msg)
+        {
+            SetNotificationTextEntry("STRING");
+            AddTextComponentSubstringPlayerName(msg);
+            DrawNotification(true, true);
         }
 
         public static bool ContainsIllegal(IDictionary<string, object> inventory, bool player = false)

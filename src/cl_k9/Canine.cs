@@ -78,11 +78,12 @@
 
             SetPedCombatAttributes(this.dog.Handle, 46, true);
 
-            SetEntityHealth(this.dog.Handle, 400);
+            SetEntityHealth(this.dog.Handle, (int)Main.settings.dog["health"]);
 
-            SetPedArmour(this.dog.Handle, 200);
+            SetPedArmour(this.dog.Handle, (int)Main.settings.dog["armor"]);
 
-            SetPedMoveRateOverride(this.dog.Handle, 7.0f);
+            SetPedMoveRateOverride(this.dog.Handle, (float)Main.settings.dog["speed"]);
+
             await this.Stay();
         }
 
@@ -130,7 +131,7 @@
                         await this.SearchPlayer();
                     return;
                 case COMMANDS.Spawn:
-                    await this.Spawn();
+                    this.Spawn();
                     return;
                 case COMMANDS.Delete:
                     this.dog.Delete();
@@ -149,7 +150,7 @@
             if (this.action == ACTION.inVehicle)
                 await this.ExitVehicle();
             this.dog.Task.ClearAll();
-            Main.ESX.ShowNotification("~y~*HIER*");
+            Main.ShowNotification($"~y~*{Main.settings.dict["follow"]}*");
             this.dog.Task.FollowToOffsetFromEntity(LocalPlayer.Character, new Vector3(0.0f, 0.0f, 0.0f), 7.0f, -1, 0.2f, true);
             this.action = ACTION.Follow;
         }
@@ -157,8 +158,7 @@
         private async Task Stay()
         {
             this.dog.Task.ClearAll();
-            this.dog.Task.ClearAll();
-            Main.ESX.ShowNotification("~y~*BLEIBEN*");
+            Main.ShowNotification($"~y~*{Main.settings.dict["stay"]}*");
             await this.dog.Task.PlayAnimation("creatures@rottweiler@amb@world_dog_sitting@base", "base", 8.0f, -4.0f, -1, AnimationFlags.Loop, 0.0f);
 
             this.action = ACTION.Stay;
@@ -171,7 +171,7 @@
             float forwardX = veh.ForwardVector.X * 2.0f;
             float forwardY = veh.ForwardVector.Y * 2.0f;
 
-            Main.ESX.ShowNotification("~y~*GEH REIN*");
+            Main.ShowNotification($"~y~*{Main.settings.dict["enterVehicle"]}*");
 
             veh.Doors[VehicleDoorIndex.Trunk].Open();
             this.dog.Task.RunTo(new Vector3(vehCoords.X - forwardX, vehCoords.Y - forwardY, vehCoords.Z), true);
@@ -191,7 +191,7 @@
 
             this.dog.Task.ClearAll();
 
-            this.dog.AttachTo(veh.Bones["seat_pside_f"], new Vector3(0.0f, 0.0f, 0.25f));
+            this.dog.AttachTo(veh.Bones[Main.settings.vehicleBoneToAttachTo], new Vector3(0.0f, 0.0f, 0.25f));
 
             await this.dog.Task.PlayAnimation("creatures@rottweiler@amb@world_dog_sitting@base", "base", 8.0f, -4.0f, -1, AnimationFlags.StayInEndFrame, 0.0f);
 
@@ -215,7 +215,7 @@
             
             float forwardY = veh.ForwardVector.Y * 3.7f;
 
-            Main.ESX.ShowNotification("~y~*VORAUS*");
+            Main.ShowNotification($"~y~*{Main.settings.dict["exitVehicle"]}*");
             this.dog.Task.ClearAll();
 
             veh.Doors[VehicleDoorIndex.Trunk].Open();
@@ -233,14 +233,14 @@
         {
             if (this.action == ACTION.Search)
             {
-                Main.ESX.ShowNotification("~y~K9: ~w~Already searching something");
+                Main.ShowNotification(Main.settings.dict["alreadySearching"]);
                 return;
             }
 
             Vehicle vehicle = await this.GetClosestVehicle2();
             if (vehicle == null)
             {
-                Main.ESX.ShowNotification("~y~K9: ~w~No vehicle found!");
+                Main.ShowNotification(Main.settings.dict["noVehicleFound"]);
                 return;
             }
 
@@ -255,24 +255,26 @@
             // Get Inventory 
             bool found = false;
 
-            Debug.WriteLine(vehicle.Mods.LicensePlate);
+            if (Main.settings.standalone == false)
+            {
+                Main.ESX.TriggerServerCallback("esx_trunk:getInventoryV", new Action<dynamic>(
+                    (inventory) =>
+                        {
+                            bool isIllegal = Main.ContainsIllegal(inventory);
+                            if (isIllegal)
+                                found = true;
+                        }), vehicle.Mods.LicensePlate);
+                Main.ESX.TriggerServerCallback("esx_glovebox:getInventoryV", new Action<dynamic>(
+                    (inventory) =>
+                        {
+                            bool isIllegal = Main.ContainsIllegal(inventory);
+                            if (isIllegal)
+                                found = true;
+                        }), vehicle.Mods.LicensePlate);
+            }
+            
 
-            Main.ESX.TriggerServerCallback("esx_trunk:getInventoryV", new Action<dynamic>(
-                (inventory) =>
-                    {
-                        bool isIllegal = Main.ContainsIllegal(inventory);
-                        if (isIllegal)
-                            found = true;
-                    }), vehicle.Mods.LicensePlate);
-            Main.ESX.TriggerServerCallback("esx_glovebox:getInventoryV", new Action<dynamic>(
-                (inventory) =>
-                    {
-                        bool isIllegal = Main.ContainsIllegal(inventory);
-                        if (isIllegal)
-                            found = true;
-                    }), vehicle.Mods.LicensePlate);
-
-            Main.ESX.ShowNotification("~y~*VERLOREN*");
+            Main.ShowNotification($"~y~*{Main.settings.dict["search"]}*");
 
             this.dog.Task.RunTo(vehSideR, true);
 
@@ -323,14 +325,21 @@
 
             vehicle.Doors[VehicleDoorIndex.BackLeftDoor].Close();
 
-            if (found)
+            if (Main.settings.standalone == false)
             {
-                Main.ESX.ShowNotification("~y~K9: ~w~Detects ~r~something...");
+                if (found)
+                {
+                    Main.ShowNotification(Main.settings.dict["dogDetects"]);
+                }
+                else
+                {
+                    Main.ShowNotification(Main.settings.dict["dogDoesntDetect"]);
+                }
             }
-            else
-            {
-                Main.ESX.ShowNotification("~y~K9: ~w~Detects ~y~nothing...");
-            }
+
+            // For people that want to use the search function in their own ways
+            TriggerEvent("K9:Export:SearchVehicle", vehicle.Mods.LicensePlate);
+            TriggerServerEvent("K9:Export:SearchVehicle", vehicle.Mods.LicensePlate);
 
             await this.Stay();
         }
@@ -339,20 +348,20 @@
         {
             if (this.action == ACTION.Search)
             {
-                Main.ESX.ShowNotification("~y~K9: ~w~Already searching something");
+                Main.ShowNotification(Main.settings.dict["alreadySearching"]);
                 return;
             }
 
             Ped player = await this.GetClosestPed();
             if (player == null || !player.IsPlayer)
             {
-                Main.ESX.ShowNotification("~y~K9: ~w~No player found!");
+                Main.ShowNotification(Main.settings.dict["noPlayerFound"]);
                 return;
             }
 
             this.action = ACTION.Search;
 
-            Main.ESX.ShowNotification("~y~*VERLOREN*");
+            Main.ShowNotification($"~y~*{Main.settings.dict["search"]}*");
 
             Vector3 plySideR = player.GetOffsetPosition(new Vector3(1.3f, 0.0f, 0.0f));
 
@@ -362,7 +371,9 @@
 
             // Get Inventory
             bool found = false;
-            Main.ESX.TriggerServerCallback(
+            if (Main.settings.standalone == false)
+            {
+                Main.ESX.TriggerServerCallback(
                 "esx_inventoryhud:getPlayerInventory",
                 new Action<dynamic>(
                     (inventory) =>
@@ -371,6 +382,8 @@
                             if (isIllegal)
                                 found = true;
                         }), GetPlayerServerId(NetworkGetPlayerIndexFromPed(player.Handle)));
+            }
+            
 
             this.dog.Task.RunTo(plySideR, true);
 
@@ -390,12 +403,16 @@
 
             if (found)
             {
-                Main.ESX.ShowNotification("~y~K9: ~w~Detects ~r~something...");
+                Main.ShowNotification(Main.settings.dict["dogDetects"]);
             }
             else
             {
-                Main.ESX.ShowNotification("~y~K9: ~w~Detects ~y~nothing...");
+                Main.ShowNotification(Main.settings.dict["dogDoesntDetect"]);
             }
+
+            // For people that want to use the search function in their own ways
+            TriggerEvent("K9:Export:SearchPlayer", GetPlayerServerId(NetworkGetPlayerIndexFromPed(player.Handle)));
+            TriggerServerEvent("K9:Export:SearchPlayer", GetPlayerServerId(NetworkGetPlayerIndexFromPed(player.Handle)));
 
             await this.Stay();
         }
@@ -439,7 +456,7 @@
         private async Task AttackPed(Entity ped)
         {
             this.dog.Task.ClearAll();
-            Main.ESX.ShowNotification("~y~*FASSEN*");
+            Main.ShowNotification($"~y~*{Main.settings.dict["attack"]}*");
             this.dog.Task.FightAgainst((Ped)ped);
 
             this.dog.AlwaysKeepTask = true;

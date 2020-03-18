@@ -1,5 +1,46 @@
 {
+    "standalone":true,
     "allowedJobGrade": "k9",
+    "vehicleBoneToAttachTo":"seat_pside_f",
+    "dog": {
+      "health":400,
+      "armor":200,
+      "speed":100.0
+    },
+    "dict":{
+      "stay":"Bleib",
+      "follow":"Hier",
+      "attack":"Fass",
+      "enterVehicle":"Geh rein",
+      "exitVehicle":"Voraus",
+      "search":"Verloren",
+
+      "attackKeyModifier":[0, 36],
+
+      "commands": {
+        "spawn":"spawn",
+        "delete":"delete",
+        "follow":"follow",
+        "stay":"stay",
+        "enter":"enter",
+        "exit":"exit",
+        "attack":"attack",
+        "search":"search",
+        "searchVehicle":"vehicle",
+        "searchPlayer":"player"
+      },
+      
+      "alreadySearching":"~y~K9: ~w~Already searching something",
+      "noVehicleFound":"~y~K9: ~w~No vehicle found!",
+      "noPlayerFound":"~y~K9: ~w~No player found!",
+      "dogDetects":"~y~K9: ~w~Detects ~r~something...",
+      "dogDoesntDetect":"~y~K9: ~w~Detects ~y~nothing...",
+
+      "commandSearchHelp":"~y~Specify~w~: ~y~player~w~/~y~vehicle",
+      "invalidDogName":"You have not entered a valid dog name try: [~y~rott~w~,~y~husky~w~,~y~retriever~w~,~y~shepherd~w~]",
+      "dogNameNotFound":"Dog name not found",
+      "commandEnterHelp":"~y~K9: ~w~You must be in a vehicle."
+    },
     "illegalItems": [
       "weed20g",
       "weed4g",

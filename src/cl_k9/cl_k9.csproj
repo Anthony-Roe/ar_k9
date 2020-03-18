@@ -53,8 +53,9 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\sh_k9\sh_k9.csproj">
-      <Project>{AA46A10E-1205-477B-BC4F-C4FE88B0D50D}</Project>
+      <Project>{aa46a10e-1205-477b-bc4f-c4fe88b0d50d}</Project>
       <Name>sh_k9</Name>
+      <Private>False</Private>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -12,11 +12,19 @@
     {
         private dynamic ESX;
 
-        public Settings settings;
+        public static Settings settings;
 
         public Main()
         {
-            TriggerEvent("esx:getSharedObject", new object[] { new Action<dynamic>(esx => {
+            LoadConfig();
+
+            while (settings == null)
+            {
+                Delay(100);
+            }
+
+            if (settings.standalone == false)
+                TriggerEvent("esx:getSharedObject", new object[] { new Action<dynamic>(esx => {
                     this.ESX = esx;
                 })});
             this.EventHandlers.Add("K9:Spawn", new Action<Player, int>(this.Spawn));
@@ -28,8 +36,6 @@
             this.EventHandlers.Add("K9:Attack", new Action<Player, string, int>(this.Attack));
             this.EventHandlers.Add("K9:SearchVehicle", new Action<Player>(this.SearchVehicle));
             this.EventHandlers.Add("K9:SearchPlayer", new Action<Player>(this.SearchPlayer));
-
-            LoadConfig();
         }
 
         private void LoadConfig()
@@ -50,16 +56,21 @@
 
         public bool HasPermission(Player source)
         {
-            dynamic player = this.ESX.GetPlayerFromId(source.Handle);
-            dynamic job = player != null ? player.getJob() : null;
+            if (settings.standalone == false)
+            {
+                dynamic player = this.ESX.GetPlayerFromId(source.Handle);
+                dynamic job = player != null ? player.getJob() : null;
 
-            if (player == null || job == null)
+                if (player == null || job == null)
+                    return false;
+
+                if (job.grade_name == settings.allowedJobGrade)
+                    return true;
+
                 return false;
+            }
 
-            if (job.grade_name == settings.allowedJobGrade)
-                return true;
-
-            return false;
+            return IsPlayerAceAllowed(source.Handle, "k9");
         }
 
         private void Spawn([FromSource] Player source, int model)
