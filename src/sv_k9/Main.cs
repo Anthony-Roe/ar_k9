@@ -40,7 +40,7 @@
 
         private void LoadConfig()
         {
-            string content = null;
+            string content = "";
 
             try
             {
@@ -56,7 +56,7 @@
 
         public bool HasPermission(Player source)
         {
-            if (settings.standalone == false)
+            if (!settings.standalone)
             {
                 dynamic player = this.ESX.GetPlayerFromId(source.Handle);
                 dynamic job = player != null ? player.getJob() : null;
@@ -69,12 +69,17 @@
 
                 return false;
             }
-
-            return IsPlayerAceAllowed(source.Handle, "k9");
+            else if (settings.acePermissions)
+            {
+                return IsPlayerAceAllowed(source.Handle, "k9");
+            }
+            else
+                return true;
         }
 
         private void Spawn([FromSource] Player source, int model)
         {
+
             if (this.HasPermission(source))
             {
                 TriggerClientEvent(source, "K9:Spawn", model);

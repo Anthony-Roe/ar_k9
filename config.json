@@ -1,5 +1,6 @@
 {
-    "standalone":false,
+    "standalone":true,
+    "acePermissions": false,
     "allowedJobGrade": "k9",
     "vehicleBoneToAttachTo":"seat_pside_f",
     "dog": {
@@ -8,12 +9,12 @@
       "speed":100.0
     },
     "dict":{
-      "stay":"Bleib",
-      "follow":"Hier",
-      "attack":"Fass",
-      "enterVehicle":"Geh rein",
-      "exitVehicle":"Voraus",
-      "search":"Verloren",
+      "stay":"Stay",
+      "follow":"Follow",
+      "attack":"Attack",
+      "enterVehicle":"Enter",
+      "exitVehicle":"Exit",
+      "search":"Search",
 
       "attackKeyModifier":[0, 36],
 
@@ -42,24 +43,7 @@
       "commandEnterHelp":"~y~K9: ~w~You must be in a vehicle."
     },
     "illegalItems": [
-      "weed20g",
-      "weed4g",
-      "weedbrick",
-      "weed_packaged",
-      "weed_untrimmed",
-      "bagofdope",
-      "meth",
-      "meth10g",
-      "meth1g",
-      "methbrick",
-      "meth_packaged",
-      "meth_raw",
-      "cocaine_cut",
-      "cocaine_packaged",
-      "cocaine_uncut",
-      "coke10g",
-      "coke1g",
-      "cokebrick"
+      "weed20g"
     ],
     "illegalWeapons": [
         "WEAPON_BAT"

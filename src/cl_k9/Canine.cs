@@ -48,6 +48,7 @@
 
         public int target;
 
+        public Blip blip;
 
         public async Task Spawn()
         {
@@ -83,6 +84,11 @@
             SetPedArmour(this.dog.Handle, (int)Main.settings.dog["armor"]);
 
             SetPedMoveRateOverride(this.dog.Handle, (float)Main.settings.dog["speed"]);
+
+            blip = this.dog.AttachBlip();
+            blip.Sprite = BlipSprite.PolicePlayer;
+            blip.IsShortRange = false;
+            blip.Name = "Police K9";
 
             await this.Stay();
         }
@@ -134,9 +140,15 @@
                     this.Spawn();
                     return;
                 case COMMANDS.Delete:
+                    this.DeleteBlip();
                     this.dog.Delete();
                     return;
             }
+        }
+
+        private async Task DeleteBlip()
+        {
+            this.blip.Delete();
         }
 
         private async Task Heal()

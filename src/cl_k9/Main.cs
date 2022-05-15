@@ -77,6 +77,8 @@
                                             TriggerServerEvent("K9:Spawn", (int)MODELS.Shepherd);
                                         else
                                             ShowNotification(settings.dict["dogNameNotFound"]);
+
+                                        ShowNotification("Loading...");
                                     }
                                     else
                                         ShowNotification(settings.dict["invalidDogName"]);
@@ -148,6 +150,7 @@
             {
                 TriggerServerEvent("K9:Attack", "PANIC");
             }
+            if (!k9.dog.Exists())
 
             await Delay(1);
         }

@@ -5,6 +5,7 @@
     public class Settings
     {
         public bool standalone { get; set; }
+        public bool acePermissions { get; set; }
         public string allowedJobGrade { get; set; }
         public string vehicleBoneToAttachTo { get; set; }
         public List<string> illegalItems { get; set; }
